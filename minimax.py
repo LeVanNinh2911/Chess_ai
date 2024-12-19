@@ -88,10 +88,18 @@ def minimax(board, depth, is_maximizing, alpha, beta):
                 break  # Cắt tỉa nếu không cần tiếp tục
         return min_eval
 
+def iterative_deepening_search(board, max_depth, color):
+    """
+    Tìm kiếm nước đi tốt nhất bằng phương pháp Tìm kiếm sâu dần kết hợp với Minimax Alpha-Beta Pruning.
+    """
+    best_move = None
+    for depth in range(1, max_depth + 1):
+        best_move = find_best_move(board, depth, color)
+    return best_move
 
 def find_best_move(board, depth, color):
     """
-    Tìm nước đi tốt nhất cho bên màu `color` (trắng hoặc đen) sử dụng thuật toán minimax.
+    Tìm nước đi tốt nhất cho bên màu `color` (trắng hoặc đen) sử dụng thuật toán minimax với alpha-beta pruning.
     """
     best_move = None
     if color == 'white':
@@ -119,4 +127,3 @@ def find_best_move(board, depth, color):
                 min_eval = eval
                 best_move = move
     return best_move
-

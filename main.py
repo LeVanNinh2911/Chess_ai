@@ -2,14 +2,15 @@ import pygame
 from gui import ChessGUI, SQUARE_SIZE
 from board import Board
 from minimax import find_best_move
-from utils import validate_user_move  # Nhập hàm kiểm tra tính hợp lệ của nước đi
+from utils import validate_user_move
+
 
 def main():
     pygame.init()
     clock = pygame.time.Clock()
 
     board = Board()  # Khởi tạo bàn cờ
-    gui = ChessGUI(board.board)  # Khởi tạo giao diện bàn cờ
+    gui = ChessGUI(board)  # Khởi tạo giao diện bàn cờ
 
     running = True
     selected_piece = None
@@ -25,6 +26,9 @@ def main():
                 pos = pygame.mouse.get_pos()
                 row, col = pos[1] // SQUARE_SIZE, pos[0] // SQUARE_SIZE
 
+                # Kiểm tra sự kiện nút "Reset" hoặc "Log out"
+                gui.handle_button_click(pos)
+
                 if selected_piece:  # Nếu đã chọn quân cờ
                     start = selected_piece
                     end = (row, col)
@@ -36,7 +40,17 @@ def main():
 
                     # Kiểm tra tính hợp lệ của nước đi
                     if validate_user_move(board.board, move_str, player_color):
+                        # Kiểm tra nếu vua của người chơi bị chiếu sau nước đi
                         board.move(start, end)  # Thực hiện di chuyển
+
+                        # Kiểm tra xem nước đi có làm vua bị chiếu không
+                        if board.is_in_check(player_color):
+                            print(f"Không thể đi! Vua của {player_color} bị chiếu.")
+                            board.undo_move()  # Hoàn tác nước đi không hợp lệ
+                            selected_piece = None  # Bỏ chọn quân cờ
+                            gui.clear_highlight()  # Xóa bất kỳ ô nào đang được đánh dấu
+                            break
+
                         selected_piece = None  # Bỏ chọn quân cờ
                         gui.clear_highlight()  # Xóa bất kỳ ô nào đang được đánh dấu
 
@@ -44,10 +58,12 @@ def main():
                         if board.is_checkmate(player_color):
                             print(f"Chiếu hết! {player_color.capitalize()} thua!")
                             board.reset_game()  # Reset lại trò chơi
+                            selected_piece = None  # Đảm bảo bỏ chọn quân cờ
                             break  # Kết thúc vòng lặp
                         elif board.is_stalemate(player_color):
                             print("Hòa! Ván cờ kết thúc!")
                             board.reset_game()  # Reset lại trò chơi
+                            selected_piece = None  # Đảm bảo bỏ chọn quân cờ
                             break  # Kết thúc vòng lặp
 
                         # Đến lượt di chuyển của AI
@@ -59,10 +75,12 @@ def main():
                         if board.is_checkmate(ai_color):
                             print("Chiếu hết! Trắng thắng!")
                             board.reset_game()  # Reset lại trò chơi
+                            selected_piece = None  # Đảm bảo bỏ chọn quân cờ
                             break  # Kết thúc vòng lặp
                         elif board.is_stalemate(ai_color):
                             print("Hòa! Ván cờ kết thúc!")
                             board.reset_game()  # Reset lại trò chơi
+                            selected_piece = None  # Đảm bảo bỏ chọn quân cờ
                             break  # Kết thúc vòng lặp
                     else:
                         print("Nước đi không hợp lệ! Vui lòng thử lại.")
@@ -77,6 +95,7 @@ def main():
         clock.tick(60)  # Giới hạn tốc độ khung hình ở 60 FPS
 
     pygame.quit()  # Thoát Pygame khi kết thúc
+
 
 if __name__ == "__main__":
     main()

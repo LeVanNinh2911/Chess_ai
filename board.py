@@ -1,4 +1,3 @@
-
 class Board:
     def __init__(self):
         self.board = self.create_initial_board()
@@ -50,14 +49,14 @@ class Board:
         moves = []
         if piece.lower() == 'p':  # Pawn
             direction = -1 if piece.isupper() else 1
-            start_row = 6 if piece.isupper() else 1  # Quân tốt trắng bắt đầu từ hàng 6, quân tốt đen bắt đầu từ hàng 1
+            start_row = 6 if piece.isupper() else 1
 
             # Tiến 1 ô
             if 0 <= row + direction < 8 and self.board[row + direction][col] == '.':
                 moves.append(((row, col), (row + direction, col)))
 
-            # Tiến 2 ô nếu quân tốt chưa di chuyển (chỉ có thể đi 2 ô nếu đang ở hàng xuất phát)
-            if row == start_row and self.board[row + 2 * direction][col] == '.':
+            # Tiến 2 ô nếu quân tốt chưa di chuyển
+            if row == start_row and self.board[row + 2 * direction][col] == '.' and self.board[row + direction][col] == '.':
                 moves.append(((row, col), (row + 2 * direction, col)))
 
             # Ăn chéo
@@ -81,7 +80,6 @@ class Board:
                             break
                         else:
                             break
-        # Các quân cờ khác (Knight, Bishop, Queen, King) không thay đổi
         elif piece.lower() == 'n':  # Knight
             for d_row, d_col in [(2, 1), (2, -1), (-2, 1), (-2, -1), (1, 2), (1, -2), (-1, 2), (-1, -2)]:
                 new_row, new_col = row + d_row, col + d_col
@@ -117,9 +115,6 @@ class Board:
         return moves
 
     def is_in_check(self, color):
-        """
-        Kiểm tra xem tướng của màu `color` có bị chiếu không.
-        """
         king_position = self.find_king(color)
         opponent_color = "black" if color == "white" else "white"
 
@@ -127,14 +122,11 @@ class Board:
             for col in range(8):
                 piece = self.board[row][col]
                 if piece != '.' and ((piece.isupper() and opponent_color == 'white') or (piece.islower() and opponent_color == 'black')):
-                    if (row, col) in self.get_piece_moves(piece, row, col):
+                    if king_position in [move[1] for move in self.get_piece_moves(piece, row, col)]:
                         return True
         return False
 
     def find_king(self, color):
-        """
-        Tìm vị trí của quân tướng (King) của màu `color`.
-        """
         for row in range(8):
             for col in range(8):
                 piece = self.board[row][col]
@@ -143,13 +135,9 @@ class Board:
         return None
 
     def is_checkmate(self, color):
-        """
-        Kiểm tra xem có phải là checkmate không.
-        """
         if not self.is_in_check(color):
             return False
 
-        # Nếu tướng bị chiếu, kiểm tra xem có nước đi hợp lệ nào giúp thoát khỏi chiếu không.
         all_moves = self.get_all_moves(color)
         for start, end in all_moves:
             self.move(start, end)
@@ -160,9 +148,6 @@ class Board:
         return True
 
     def is_stalemate(self, color):
-        """
-        Kiểm tra xem có phải là stalemate không.
-        """
         if self.is_in_check(color):
             return False
 
@@ -173,21 +158,15 @@ class Board:
         return False
 
     def reset_game(self):
-        """
-        Reset lại bàn cờ về trạng thái ban đầu.
-        """
-        self.board = self.create_initial_board()
-        self.move_log = []
-
-    def end_game(self):
-        """
-        Kết thúc ván đấu, có thể là checkmate hoặc stalemate.
-        """
-        if self.is_checkmate("white"):
-            print("Checkmate! Black wins!")
-        elif self.is_checkmate("black"):
-            print("Checkmate! White wins!")
-        elif self.is_stalemate("white") or self.is_stalemate("black"):
-            print("Stalemate! It's a draw!")
-        else:
-            print("Game continues...")
+        # Đặt lại bàn cờ về trạng thái ban đầu
+        self.board = [
+            ["r", "n", "b", "q", "k", "b", "n", "r"],
+            ["p", "p", "p", "p", "p", "p", "p", "p"],
+            [".", ".", ".", ".", ".", ".", ".", "."],
+            [".", ".", ".", ".", ".", ".", ".", "."],
+            [".", ".", ".", ".", ".", ".", ".", "."],
+            [".", ".", ".", ".", ".", ".", ".", "."],
+            ["P", "P", "P", "P", "P", "P", "P", "P"],
+            ["R", "N", "B", "Q", "K", "B", "N", "R"]
+        ]
+        self.move_log.clear()
