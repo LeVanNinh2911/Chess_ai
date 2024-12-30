@@ -11,11 +11,11 @@ def main():
 
     board = Board()  # Khởi tạo bàn cờ
     gui = ChessGUI(board)  # Khởi tạo giao diện bàn cờ
+    move_history = []  # Lịch sử các nước đi
 
     running = True
     selected_piece = None
-    player_color = "white"  # Người chơi sẽ chơi quân trắng
-    ai_color = "black"  # AI sẽ chơi quân đen
+    player_color, ai_color = "white", "black"  # Người chơi màu trắng, AI màu đen
 
     while running:
         for event in pygame.event.get():
@@ -26,75 +26,90 @@ def main():
                 pos = pygame.mouse.get_pos()
                 row, col = pos[1] // SQUARE_SIZE, pos[0] // SQUARE_SIZE
 
-                # Kiểm tra sự kiện nút "Reset" hoặc "Log out"
-                gui.handle_button_click(pos)
+                # Kiểm tra nút bấm Undo, Reset, hoặc Log out
+                if 40 <= pos[0] <= 200 and 660 <= pos[1] <= 700:  # Nút Undo
+                    if len(move_history) >= 2:
+                        # Undo nước đi của AI
+                        board.undo_move()
+                        move_history.pop()
+                        # Undo nước đi của người chơi
+                        board.undo_move()
+                        move_history.pop()
+                        gui.update()
+                    continue
+                elif 240 <= pos[0] <= 400 and 660 <= pos[1] <= 700:  # Nút Reset
+                    board.reset_game()
+                    move_history.clear()
+                    selected_piece = None
+                    gui.clear_highlight()
+                    gui.update()
+                    continue
+                elif 440 <= pos[0] <= 600 and 660 <= pos[1] <= 700:  # Nút Log out
+                    pygame.quit()
+                    return
 
-                if selected_piece:  # Nếu đã chọn quân cờ
+                if selected_piece:
                     start = selected_piece
                     end = (row, col)
+                    move_str = f"{chr(start[1] + ord('a'))}{8 - start[0]} {chr(end[1] + ord('a'))}{8 - end[0]}"
 
-                    # Chuyển đổi nước đi sang ký hiệu cờ vua chuẩn (ví dụ, 'e2 e4')
-                    start_pos = f"{chr(start[1] + ord('a'))}{8 - start[0]}"
-                    end_pos = f"{chr(end[1] + ord('a'))}{8 - end[0]}"
-                    move_str = f"{start_pos} {end_pos}"
-
-                    # Kiểm tra tính hợp lệ của nước đi
-                    if validate_user_move(board.board, move_str, player_color):
-                        # Kiểm tra nếu vua của người chơi bị chiếu sau nước đi
+                    if validate_user_move(board.board, move_str, player_color):  # Kiểm tra tính hợp lệ
                         board.move(start, end)  # Thực hiện di chuyển
+                        move_history.append((start, end))  # Ghi lại lịch sử nước đi
 
-                        # Kiểm tra xem nước đi có làm vua bị chiếu không
+                        # Kiểm tra nếu vua bị chiếu
                         if board.is_in_check(player_color):
                             print(f"Không thể đi! Vua của {player_color} bị chiếu.")
-                            board.undo_move()  # Hoàn tác nước đi không hợp lệ
-                            selected_piece = None  # Bỏ chọn quân cờ
-                            gui.clear_highlight()  # Xóa bất kỳ ô nào đang được đánh dấu
+                            board.undo_move()
+                            move_history.pop()
+                            selected_piece = None
+                            gui.clear_highlight()
                             break
 
-                        selected_piece = None  # Bỏ chọn quân cờ
-                        gui.clear_highlight()  # Xóa bất kỳ ô nào đang được đánh dấu
+                        selected_piece = None
+                        gui.clear_highlight()
 
-                        # Kiểm tra xem người chơi có thắng hoặc ván cờ đã kết thúc chưa
+                        # Kiểm tra kết thúc trò chơi
                         if board.is_checkmate(player_color):
                             print(f"Chiếu hết! {player_color.capitalize()} thua!")
-                            board.reset_game()  # Reset lại trò chơi
-                            selected_piece = None  # Đảm bảo bỏ chọn quân cờ
-                            break  # Kết thúc vòng lặp
+                            board.reset_game()
+                            move_history.clear()
+                            break
                         elif board.is_stalemate(player_color):
                             print("Hòa! Ván cờ kết thúc!")
-                            board.reset_game()  # Reset lại trò chơi
-                            selected_piece = None  # Đảm bảo bỏ chọn quân cờ
-                            break  # Kết thúc vòng lặp
+                            board.reset_game()
+                            move_history.clear()
+                            break
 
-                        # Đến lượt di chuyển của AI
+                        # Đến lượt AI di chuyển
                         ai_move = find_best_move(board, 2, ai_color)
                         if ai_move:
                             board.move(ai_move[0], ai_move[1])
+                            move_history.append(ai_move)  # Ghi lại lịch sử nước đi của AI
 
-                        # Kiểm tra xem AI có thắng hay ván cờ đã kết thúc chưa
+                        # Kiểm tra kết thúc trò chơi với AI
                         if board.is_checkmate(ai_color):
                             print("Chiếu hết! Trắng thắng!")
-                            board.reset_game()  # Reset lại trò chơi
-                            selected_piece = None  # Đảm bảo bỏ chọn quân cờ
-                            break  # Kết thúc vòng lặp
+                            board.reset_game()
+                            move_history.clear()
+                            break
                         elif board.is_stalemate(ai_color):
                             print("Hòa! Ván cờ kết thúc!")
-                            board.reset_game()  # Reset lại trò chơi
-                            selected_piece = None  # Đảm bảo bỏ chọn quân cờ
-                            break  # Kết thúc vòng lặp
+                            board.reset_game()
+                            move_history.clear()
+                            break
                     else:
                         print("Nước đi không hợp lệ! Vui lòng thử lại.")
-                        selected_piece = None  # Bỏ chọn quân cờ
-                        gui.clear_highlight()  # Xóa bất kỳ ô nào đang được đánh dấu
+                        selected_piece = None
+                        gui.clear_highlight()
                 else:
-                    # Nếu chưa chọn quân cờ, chọn quân cờ ban đầu
-                    selected_piece = (row, col)
-                    gui.highlight_square(row, col)  # Đánh dấu ô đã chọn
+                    selected_piece = (row, col)  # Chọn quân cờ
+                    gui.highlight_square(row, col)
 
-        gui.update()  # Cập nhật giao diện người dùng
-        clock.tick(60)  # Giới hạn tốc độ khung hình ở 60 FPS
+        gui.update()  # Cập nhật giao diện
+        clock.tick(60)  # Giới hạn FPS
 
-    pygame.quit()  # Thoát Pygame khi kết thúc
+    pygame.quit()  # Thoát trò chơi
 
 
 if __name__ == "__main__":
